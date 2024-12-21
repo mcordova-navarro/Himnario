@@ -16,7 +16,7 @@ export default function App() {
   useEffect(() => {
     // Hacer la solicitud al backend
     axios
-      .get('http://localhost:5000/api/himnos') // Asegúrate de que esta URL sea correcta
+      .get('http://192.168.108.17:5001/api/himnos') // Cambié localhost por tu IP local
       .then((response) => {
         setHimnos(response.data); // Asigna los datos al estado
         setLoading(false); // Finaliza la carga

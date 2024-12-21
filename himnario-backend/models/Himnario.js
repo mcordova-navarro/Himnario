@@ -1,9 +1,8 @@
 const mongoose = require('mongoose');
 
 const himnarioSchema = new mongoose.Schema({
-  nombre: { type: String, required: true },
-  detalles: { type: String, required: true },
-  popularidad: { type: Number, default: 0 }
+  id: { type: Number, required: true },
+  titulo: { type: String, required: true },
 });
 
 const Himnario = mongoose.model('Himnario', himnarioSchema);
