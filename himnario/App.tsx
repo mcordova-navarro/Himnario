@@ -1,22 +1,58 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import axios from 'axios';
 
-// Datos de ejemplo
-const himnos = [
-  { id: '1', titulo: 'Santo, Santo, Santo' },
-  { id: '2', titulo: 'Cuan Grande es Él' },
-  { id: '3', titulo: 'Alabaré' },
-];
+// Definimos el tipo de datos que vamos a manejar
+interface Himno {
+  id: number;  // o string, según tu base de datos
+  titulo: string;
+}
 
 export default function App() {
+  const [himnos, setHimnos] = useState<Himno[]>([]); // Estado para almacenar los himnos
+  const [loading, setLoading] = useState(true); // Estado para controlar el indicador de carga
+  const [error, setError] = useState<string | null>(null); // Estado para manejar errores
+
+  useEffect(() => {
+    // Hacer la solicitud al backend
+    axios
+      .get('http://localhost:5000/api/himnos') // Asegúrate de que esta URL sea correcta
+      .then((response) => {
+        setHimnos(response.data); // Asigna los datos al estado
+        setLoading(false); // Finaliza la carga
+      })
+      .catch((error) => {
+        console.error('Error al obtener los datos:', error);
+        setError('No se pudo cargar el himnario. Intenta de nuevo más tarde.');
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Cargando himnario...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.error}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Himnario</Text>
       <FlatList
         data={himnos}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()} // Asegúrate de que `id` sea único
         renderItem={({ item }) => (
-          <Text style={styles.hymn}>{item.titulo}</Text>
+          <Text style={styles.hymn}>{item.titulo}</Text> // Accede a `titulo` con seguridad
         )}
       />
     </View>
@@ -40,5 +76,9 @@ const styles = StyleSheet.create({
   hymn: {
     fontSize: 18,
     marginVertical: 5,
+  },
+  error: {
+    color: 'red',
+    fontSize: 16,
   },
 });
