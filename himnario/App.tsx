@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import axios from 'axios';
+import { Card, Button, Title, Paragraph, Surface } from 'react-native-paper';
 
 // Definimos el tipo de datos que vamos a manejar
 interface Himno {
-  id: number;  // o string, según tu base de datos
+  id: number;
   titulo: string;
 }
 
@@ -16,7 +17,7 @@ export default function App() {
   useEffect(() => {
     // Hacer la solicitud al backend
     axios
-      .get('http://192.168.108.17:5001/api/himnos') // Cambié localhost por tu IP local
+      .get('http://192.168.0.11:5001/api/himnos') // Cambié localhost por tu IP local
       .then((response) => {
         setHimnos(response.data); // Asigna los datos al estado
         setLoading(false); // Finaliza la carga
@@ -50,9 +51,19 @@ export default function App() {
       <Text style={styles.title}>Himnario</Text>
       <FlatList
         data={himnos}
-        keyExtractor={(item) => item.id.toString()} // Asegúrate de que `id` sea único
+        keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <Text style={styles.hymn}>{item.titulo}</Text> // Accede a `titulo` con seguridad
+          <Card style={styles.card}>
+            <Card.Content>
+              <Title>{item.titulo}</Title>
+              <Paragraph>Descripción breve del himno</Paragraph>
+            </Card.Content>
+            <Card.Actions>
+              <Button onPress={() => alert(`Descargando ${item.titulo}`)} mode="contained" style={styles.button}>
+                Descargar
+              </Button>
+            </Card.Actions>
+          </Card>
         )}
       />
     </View>
@@ -63,22 +74,29 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#f5f5f5',
     paddingTop: 50,
+    paddingHorizontal: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: 'bold',
     marginBottom: 20,
+    textAlign: 'center',
+    color: '#333',
   },
-  hymn: {
-    fontSize: 18,
-    marginVertical: 5,
+  card: {
+    marginBottom: 15,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    elevation: 5,
+  },
+  button: {
+    marginTop: 10,
   },
   error: {
     color: 'red',
     fontSize: 16,
+    textAlign: 'center',
   },
 });
