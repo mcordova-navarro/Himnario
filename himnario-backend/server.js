@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const Himnario = require('./models/Himnario'); // Importa el modelo
+const SearchLog = require('./models/SearchLog'); // Importa el modelo SearchLog
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -19,31 +20,109 @@ mongoose
   .catch((err) => console.error('Error al conectar a MongoDB:', err.message));
 
 // Rutas
-app.get('/api/himnos', async (req, res) => {
+
+// 1. Obtener todos los himnarios
+app.get('/api/himnarios', async (req, res) => {
   try {
-    const himnos = await Himnario.find(); // Obtiene himnos desde la base de datos
-    res.json(himnos);
+    const himnarios = await Himnario.find(); // Obtiene todos los himnarios
+    res.json(himnarios);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener los himnos' });
+    res.status(500).json({ error: 'Error al obtener los himnarios' });
   }
 });
 
-// Ruta de prueba para agregar himnos (solo para inicializar datos)
-app.post('/api/himnos', async (req, res) => {
+// 2. Buscar un himnario por su `tag`
+app.get('/api/himnarios/:tag', async (req, res) => {
+  const { tag } = req.params;
+
   try {
-    const himno = new Himnario(req.body); // Crea un nuevo himno con los datos enviados
-    await himno.save();
-    res.status(201).json({ message: 'Himno agregado correctamente', himno });
+    const himnario = await Himnario.findOne({ tag });
+    if (!himnario) {
+      return res.status(404).json({ error: 'Himnario no encontrado' });
+    }
+
+    // Registra la búsqueda
+    await SearchLog.create({ tag, title: himnario.title });
+
+    res.json(himnario);
   } catch (err) {
-    res.status(500).json({ error: 'Error al agregar el himno' });
+    res.status(500).json({ error: 'Error al buscar el himnario' });
   }
 });
+
+// 3. Agregar un nuevo himnario (opcional)
+app.post('/api/himnarios', async (req, res) => {
+  try {
+    const himnario = new Himnario(req.body); // Crea un nuevo himnario con los datos enviados
+    await himnario.save();
+    res.status(201).json({ message: 'Himnario agregado correctamente', himnario });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al agregar el himnario' });
+  }
+});
+
+// 4. Obtener(listar) los himnarios más buscados
+app.get('/himnarios/mas-buscados', async (req, res) => {
+  const { limit } = req.query; // Número máximo de resultados a devolver
+
+  try {
+      // Obtener todos los himnarios
+      const himnarios = await Himnario.find();
+
+      // Combinar todos los himnos de los himnarios
+      let todosLosHimnos = [];
+      himnarios.forEach(himnario => {
+          todosLosHimnos = [...todosLosHimnos, ...himnario.hymns];
+      });
+
+      // Ordenar por vistas (views) en orden descendente
+      todosLosHimnos.sort((a, b) => (b.views || 0) - (a.views || 0));
+
+      // Limitar los resultados si se especifica
+      const resultado = limit ? todosLosHimnos.slice(0, parseInt(limit, 10)) : todosLosHimnos;
+
+      res.status(200).json(resultado);
+  } catch (error) {
+      res.status(500).json({ message: 'Error interno del servidor', error });
+  }
+});
+
+
+
+//5. Buscar Himno por número o título
+app.get('/himnarios/:id/himnos/:numero', async (req, res) => {
+  const { id, numero } = req.params;
+
+  try {
+      const himnario = await Himnario.findById(id);
+      if (!himnario) {
+          return res.status(404).json({ message: 'Himnario no encontrado' });
+      }
+
+      const himno = himnario.hymns.find(h => h.number === parseInt(numero, 10));
+      if (!himno) {
+          return res.status(404).json({ message: 'Himno no encontrado' });
+      }
+
+      // Incrementar vistas
+      himno.views = (himno.views || 0) + 1;
+      await himnario.save();
+
+      res.status(200).json(himno);
+  } catch (error) {
+      res.status(500).json({ message: 'Error interno del servidor', error });
+  }
+});
+
+
+
+
+
+
+
+
 
 // Inicia el servidor
 app.listen(port, () => {
   console.log(`Servidor corriendo en el puerto ${port}`);
 });
-
-
-
-
