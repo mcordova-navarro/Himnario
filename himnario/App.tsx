@@ -10,42 +10,43 @@ import {
   Animated,
 } from 'react-native';
 import axios from 'axios';
-import { MaterialIcons, Feather } from '@expo/vector-icons'; // Para íconos
+import { MaterialIcons, Feather } from '@expo/vector-icons';
 import { Surface } from 'react-native-paper';
 
 interface Himno {
   _id: string;
   title: string;
   number: number;
-  fuente: string;  // Este campo parece ser el tipo de himnario
+  fuente?: string;
+  verses?: string[];
+  chorus?: string;
+  views?: number;
 }
 
 export default function App() {
   const [himnos, setHimnos] = useState<Himno[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState('Home'); // Control para cambiar entre pantallas
+  const [currentPage, setCurrentPage] = useState('Home');
+  const [selectedHimno, setSelectedHimno] = useState<Himno | null>(null);
   const [dragging, setDragging] = useState(false);
 
   const scrollX = useRef(new Animated.Value(0)).current;
 
-  // Control para el gesto deslizante
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderMove: (e, gestureState) => {
         if (!dragging) setDragging(true);
-        // Actualizamos la posición de desplazamiento
         scrollX.setValue(gestureState.dx);
       },
       onPanResponderRelease: (e, gestureState) => {
         if (gestureState.dx > 100) {
-          setCurrentPage('Himno');
-        } else if (gestureState.dx < -100) {
           setCurrentPage('Home');
+        } else if (gestureState.dx < -100) {
+          setCurrentPage('Himno');
         }
-        // Reseteamos el valor del desplazamiento
         Animated.spring(scrollX, {
           toValue: 0,
           useNativeDriver: false,
@@ -56,23 +57,25 @@ export default function App() {
   ).current;
 
   useEffect(() => {
-    axios
-      .get('http://192.168.0.11:5001/himnarios/mas-buscados?limit=3') // Endpoint para más buscados
-      .then((response) => {
-        const himnosFiltrados = response.data.map((himno: any) => ({
-          _id: himno._id,
-          title: himno.title,
-          number: himno.number,
-          fuente: himno.fuente,
-        }));
-        setHimnos(himnosFiltrados);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error('Error al obtener los datos:', error);
-        setError('No se pudo cargar los himnos más buscados. Intenta de nuevo más tarde.');
-        setLoading(false);
-      });
+    const fetchHimnos = () => {
+      axios
+        .get('http://192.168.144.17:5001/himnarios/mas-buscados?limit=3')
+        .then((response) => {
+          setHimnos(response.data);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error('Error al obtener los datos:', error);
+          setError('No se pudo cargar los himnos más buscados. Intenta de nuevo más tarde.');
+          setLoading(false);
+        });
+    };
+
+    fetchHimnos();
+
+    const intervalId = setInterval(fetchHimnos, 30000); // Actualiza cada 30 segundos
+
+    return () => clearInterval(intervalId); // Limpia el intervalo al desmontar el componente
   }, []);
 
   if (loading) {
@@ -92,70 +95,110 @@ export default function App() {
     );
   }
 
+  const renderHimnoDetails = () => {
+    if (!selectedHimno) return null;
+    return (
+      <View style={styles.himnoDetailsContainer}>
+        <Text style={styles.himnoTitle}>{selectedHimno.title}</Text>
+        <Text style={styles.himnoNumber}>Himno Nº {selectedHimno.number}</Text>
+        {selectedHimno.verses?.map((verse, index) => (
+          <Text key={index} style={styles.himnoVerse}>{verse}</Text>
+        ))}
+        {selectedHimno.chorus && (
+          <Text style={styles.himnoChorus}>{selectedHimno.chorus}</Text>
+        )}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container} {...panResponder.panHandlers}>
-      {/* Barra de navegación superior */}
-      <View style={styles.topBar}>
-        <MaterialIcons name="notifications" size={30} color="#6200ee" style={styles.icon} />
-        <MaterialIcons name="account-circle" size={30} color="#6200ee" style={styles.icon} />
-      </View>
+      {/* Barra de navegación superior, que solo aparece en la pantalla de Himno */}
+      {currentPage === 'Himno' && (
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.icon} onPress={() => { /* Función para reproducir */ }}>
+            <MaterialIcons name="play-arrow" size={30} color="#6200ee" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.icon} onPress={() => { /* Función para cambiar tamaño de letras */ }}>
+            <MaterialIcons name="text-fields" size={30} color="#6200ee" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.icon} onPress={() => { /* Función de búsqueda */ }}>
+            <MaterialIcons name="search" size={30} color="#6200ee" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.icon} onPress={() => { /* Función para mostrar abreviación */ }}>
+            <Text style={styles.abbreviation}>HM 🌐</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-      {/* "Más Buscados" y lista de himnos */}
-      <Text style={styles.header}>Más Buscados</Text>
-      <FlatList
-        data={himnos}
-        keyExtractor={(item) => item._id} // Usa _id si es único
-        renderItem={({ item }) => (
-          <Surface style={styles.card}>
-            <View style={styles.cardContent}>
-              {/* Símbolo del mundo */}
-              <MaterialIcons name="language" size={24} color="#6200ee" style={styles.icon} />
-              <View style={styles.textContainer}>
-                <Text style={styles.himnoTitle}>{item.title}</Text>
-                <View style={styles.detailsContainer}>
-                  {/* Número del himnario y nombre completo */}
-                  <Text style={styles.himnoDetails}>
-                    Himnario {item.number} - {item.fuente}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </Surface>
-        )}
-      />
+      {/* Pantalla Home */}
+      {currentPage === 'Home' && (
+        <>
+          <View style={styles.topBar}>
+            <TouchableOpacity style={styles.icon}>
+              <MaterialIcons name="notifications" size={30} color="#6200ee" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.icon}>
+              <MaterialIcons name="person" size={30} color="#6200ee" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.header}>Más Buscados</Text>
+          <FlatList
+            data={himnos}
+            keyExtractor={(item) => item._id}
+            renderItem={({ item }) => (
+              <Surface style={styles.card}>
+                <TouchableOpacity onPress={() => {
+                  setSelectedHimno(item);
+                  setCurrentPage('Himno');
+                }}>
+                  <View style={styles.cardContent}>
+                    <MaterialIcons name="language" size={24} color="#6200ee" style={styles.icon} />
+                    <View style={styles.textContainer}>
+                      <Text style={styles.himnoTitle}>{item.title}</Text>
+                      <Text style={styles.himnoDetails}>Himnario {item.number}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </Surface>
+            )}
+          />
+        </>
+      )}
 
-      {/* Animación para el cambio entre "Home" y "Himno" */}
+      {/* Pantalla de Himno */}
+      {currentPage === 'Himno' && (
+        <Animated.View style={styles.pageView}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => setCurrentPage('Home')}
+          >
+            <Text style={styles.backButtonText}>{'< Regresar'}</Text>
+          </TouchableOpacity>
+          {renderHimnoDetails()}
+        </Animated.View>
+      )}
+
+      {/* Botón deslizable */}
       <Animated.View
         style={[
-          styles.pageView,
+          styles.buttonContainer,
           {
-            transform: [
-              {
-                translateX: scrollX.interpolate({
-                  inputRange: [-200, 0, 200],
-                  outputRange: [-300, 0, 300],
-                  extrapolate: 'clamp',
-                }),
-              },
-            ],
+            transform: [{ translateX: scrollX }],
           },
         ]}
       >
-        {currentPage === 'Home' && (
-          <View style={styles.page}>
-            <Text style={styles.pageText}>Página Home</Text>
-          </View>
-        )}
-        {currentPage === 'Himno' && (
-          <View style={styles.page}>
-            <Text style={styles.pageText}>Página Himno</Text>
-          </View>
-        )}
+        <TouchableOpacity style={styles.slideButton}>
+          <Text style={styles.buttonText}>Deslízame</Text>
+        </TouchableOpacity>
       </Animated.View>
 
-      {/* Barra de navegación inferior estática */}
+      {/* Barra de navegación inferior */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navButton}>
+        <TouchableOpacity
+          style={styles.navButton}
+          onPress={() => setCurrentPage('Home')}
+        >
           <Feather name="home" size={24} color="#6200ee" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
@@ -176,8 +219,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f7f7f7',
-    paddingHorizontal: 10,
-    position: 'relative',
   },
   topBar: {
     position: 'absolute',
@@ -185,17 +226,23 @@ const styles = StyleSheet.create({
     right: 15,
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    zIndex: 10,
+    alignItems: 'center',
   },
   icon: {
     marginLeft: 15,
   },
+  abbreviation: {
+    fontSize: 16,
+    color: '#6200ee',
+    fontWeight: 'bold',
+  },
   header: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginTop: 100, // Mueve la cabecera más abajo
+    marginTop: 100,
     marginVertical: 10,
     color: '#6200ee',
+    textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,
@@ -230,37 +277,51 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
+    marginLeft: 10,
   },
   himnoTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
   },
-  detailsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   himnoDetails: {
     fontSize: 14,
     color: '#666',
-    marginLeft: 5,
   },
   pageView: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    padding: 20,
   },
-  page: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    width: '100%',
-    height: '100%',
+  backButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 20,
   },
-  pageText: {
-    fontSize: 20,
+  backButtonText: {
+    fontSize: 16,
     color: '#6200ee',
+  },
+  himnoDetailsContainer: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+  },
+  himnoNumber: {
+    fontSize: 16,
+    marginVertical: 5,
+    color: '#555',
+  },
+  himnoVerse: {
+    fontSize: 14,
+    marginVertical: 2,
+    color: '#444',
+  },
+  himnoChorus: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: '#666',
+    marginTop: 10,
   },
   bottomNav: {
     flexDirection: 'row',
@@ -277,5 +338,36 @@ const styles = StyleSheet.create({
     marginTop: 5,
     fontSize: 12,
     color: '#6200ee',
+  },
+  buttonContainer: {
+    width: 250,
+    height: 50,
+    borderRadius: 30,
+    backgroundColor: '#e3e3e3',
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+    marginTop: 30,
+  },
+  slideButton: {
+    width: 100,
+    height: 40,
+    backgroundColor: '#6200ee',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    left: 10,
+    opacity: 0.9,
+    transform: [{ scale: 1 }],
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
