@@ -90,27 +90,35 @@ app.get('/himnarios/mas-buscados', async (req, res) => {
 
 
 //5. Buscar Himno por número o título
-app.get('/himnarios/:id/himnos/:numero', async (req, res) => {
-  const { id, numero } = req.params;
+app.get('/himnarios/:id/himnos', async (req, res) => {
+  const { id } = req.params;
+  const { numero, titulo } = req.query; // Parámetros de búsqueda
 
   try {
-      const himnario = await Himnario.findById(id);
-      if (!himnario) {
-          return res.status(404).json({ message: 'Himnario no encontrado' });
-      }
+    const himnario = await Himnario.findById(id);
+    if (!himnario) {
+      return res.status(404).json({ message: 'Himnario no encontrado' });
+    }
 
-      const himno = himnario.hymns.find(h => h.number === parseInt(numero, 10));
-      if (!himno) {
-          return res.status(404).json({ message: 'Himno no encontrado' });
-      }
+    let himno;
 
-      // Incrementar vistas
-      himno.views = (himno.views || 0) + 1;
-      await himnario.save();
+    if (numero) {
+      himno = himnario.hymns.find(h => h.number === parseInt(numero, 10));
+    } else if (titulo) {
+      himno = himnario.hymns.find(h => h.title.toLowerCase() === titulo.toLowerCase());
+    }
 
-      res.status(200).json(himno);
+    if (!himno) {
+      return res.status(404).json({ message: 'Himno no encontrado' });
+    }
+
+    // Incrementar vistas
+    himno.views = (himno.views || 0) + 1;
+    await himnario.save();
+
+    res.status(200).json(himno);
   } catch (error) {
-      res.status(500).json({ message: 'Error interno del servidor', error });
+    res.status(500).json({ message: 'Error interno del servidor', error });
   }
 });
 
