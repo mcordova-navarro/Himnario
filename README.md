@@ -1,8 +1,28 @@
-# Himnario
-# abrir el terminal,  colocar el comando ipconfig 
-# Luego ver en el apartado de llamado "Adaptador de LAN inalámbrica Wi-Fi"->copiar la direccion IPv4 y colocarlo en el backend y front-end
-# Abrir docker para activar la base de datos de mongoDB
-# abrir el terminal de visual code -> irte al directorio del backend e inciarlo con el comando npm start
-# abrir el terminal nuevamente e irte al directorio del frontend("himnario") e iniciarlo con el comando -> npx expo start
-# instalar las librerias necesarias si alguno de los comandos no es reconocida en el terminal
-# Probarlo en Postman
+# 📖 MultiHimnario 🎶  
+
+Aplicación multiplataforma que permite a los usuarios acceder a un catálogo de diferentes himnarios, facilitando la búsqueda y selección de himnos sin necesidad de múltiples libros físicos.  
+
+## 🚀 Tecnologías utilizadas  
+- **Frontend**: React Native (Expo)  
+- **Backend**: Node.js con Express.js  
+- **Base de datos**: MongoDB (Docker)  
+- **Autenticación y gestión de datos**: Firebase (opcional)  
+
+---
+
+## 📌 Requisitos previos  
+Antes de ejecutar el proyecto, asegúrate de tener instalado:  
+- **Node.js** (versión recomendada: 16.x o superior)  
+- **npm** o **yarn**  
+- **Docker** (para levantar MongoDB en contenedor)  
+- **Expo CLI** (para ejecutar el frontend)  
+- **Postman** o alguna herramienta para probar la API  
+
+---
+
+## ⚙️ Configuración del entorno  
+
+### 1️⃣ Obtener la dirección IP local  
+Ejecuta el siguiente comando en la terminal (Windows):  
+```sh
+ipconfig
