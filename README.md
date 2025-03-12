@@ -128,28 +128,6 @@ Si el servidor está funcionando, recibirás una respuesta JSON como esta:
 
 ---
 
-## 📂 Estructura del Proyecto  
-```plaintext
-MultiHimnario/
-│── backend/            # Código del backend (Node.js + Express)
-│   ├── controllers/    # Controladores de las rutas
-│   ├── models/         # Modelos de la base de datos (MongoDB)
-│   ├── routes/         # Definición de las rutas API
-│   ├── config.js       # Configuración del servidor
-│   ├── server.js       # Archivo principal del servidor
-│   ├── package.json    # Dependencias y configuración de Node.js
-│── frontend/           # Código del frontend (React Native + Expo)
-│   ├── components/     # Componentes reutilizables
-│   ├── screens/        # Pantallas principales de la app
-│   ├── assets/         # Imágenes y recursos estáticos
-│   ├── App.js          # Archivo principal de la aplicación
-│   ├── package.json    # Dependencias y configuración de React Native
-│── docker-compose.yml  # Archivo para levantar MongoDB con Docker
-│── README.md           # Documentación del proyecto
-```
-
----
-
 ### ✅ Notas y Consideraciones  
 - **Asegúrate de tener Docker corriendo** antes de iniciar la base de datos.  
 - **Si cambias de red**, actualiza la dirección **IPv4** en los archivos de configuración.  
